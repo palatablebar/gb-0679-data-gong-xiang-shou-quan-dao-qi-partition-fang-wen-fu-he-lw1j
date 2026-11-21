@@ -29,6 +29,9 @@
 | TRAP-07 | 上游结果空值 | 误报拒绝 | 隔离缺失 | `app/values.py` | `tests/test_m3.py::test_real_missing_decision_not_zero` |
 | TRAP-19 | 允许与拒绝重叠 | 后写覆盖 | 拒绝优先且排序证据 | `app/modules/m4_conflicts/rules.py` | `tests/test_m4.py::test_deny_priority_counterexample` |
 | TRAP-23 | 授权到期点 | 多放行一次 | 半开生效窗 | `app/modules/m3_grants/rules.py` | `tests/test_m3.py::test_expiry_endpoint_excluded` |
+| TRAP-31 | 未确认授权沿用 | 越权进入审计 | 到期系统形成停用结论不延长窗口 | `app/renewal.py` | `tests/test_renewal.py::test_unconfirmed_stops_at_deadline` |
+| TRAP-32 | 续期重试 | 重复新增结论 | (授权,周期)唯一幂等 | `app/store.py` | `tests/test_renewal.py::test_save_renewal_retry_keeps_first` |
+| TRAP-33 | 依据随批次漂移 | 旧批次结论被改写 | 结论并入批次参数与摘要 | `app/pipeline.py` | `tests/test_renewal.py::test_old_run_keeps_original_basis` |
 
 ## 对账规则
 

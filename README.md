@@ -25,6 +25,8 @@ docker compose exec -T app pytest -q
 
 拒绝规则优先于允许，授权必须同时命中资源、分区和生效窗；显式拒绝不得被宽授权覆盖。
 
+季度续期：每份授权按(授权,季度周期)形成唯一续期结论。到期未确认的授权在截止时停止，不延长生效窗；负责人确认续期后窗口延至新截止。续期结论并入批次参数，访问裁决、冲突检查与证据导出共用同一份依据，旧批次保留原结论。
+
 ## 演示
 
 1. 打开首页，核对当次计算、差异和隔离原因。
@@ -37,6 +39,8 @@ docker compose exec -T app pytest -q
 输入列见 `docs/DATA-DICTIONARY.md`。项目包含dirty.csv、clean.csv、legacy.csv，统一走实际导入路径。上传限制4MB，拒绝不带时区的时间。业务键按字符串保留，Decimal参与计算，空值不会当零。
 
 `POST /api/runs` 接收sample或csv；`GET /api/runs`返回历史批次；`POST /api/runs/<id>/review`需要version与decision；`GET /api/runs/<id>/archive`返回唯一证据导出。
+
+`POST /api/grants/<id>/renewal`接收grant_end、decision（续期/停用）与extended_end（续期必填），按(授权,季度)幂等定版：相同结论重试返回原结论不新增，不同结论返回409。`GET /api/renewals`列出已定版结论。
 
 ## 范围
 

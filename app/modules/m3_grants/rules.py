@@ -1,6 +1,7 @@
 from app.values import instant,number
 from app.reasons import reject
 from app.errors import DomainError
+from app.renewal import effective_grants
 GRANTS=[{"id":"G-01","principal":"analyst","resource":"orders","start":"2026-11-01T00:00:00Z","end":"2026-12-01T00:00:00Z","from_partition":"2026-01","to_partition":"2026-12","effect":"allow"},{"id":"G-02","principal":"analyst","resource":"orders","start":"2026-11-10T00:00:00Z","end":"2026-11-20T00:00:00Z","from_partition":"2026-10","to_partition":"2026-11","effect":"deny"},{"id":"G-03","principal":"auditor","resource":"customers","start":"2026-11-01T00:00:00Z","end":"2026-12-01T00:00:00Z","from_partition":"2026-01","to_partition":"2026-12","effect":"allow"}]
 def validate_grants(grants):
     ids=set()
@@ -9,7 +10,8 @@ def validate_grants(grants):
         ids.add(g["id"])
     return grants
 def evaluate(rows,context):
-    grants=validate_grants(context.get("parameters",{}).get("grants",GRANTS));good=[];bad=[]
+    parameters=context.get("parameters",{})
+    grants=effective_grants(validate_grants(parameters.get("grants",GRANTS)),parameters.get("renewals",[]));good=[];bad=[]
     for row in rows:
         try:
             at=instant(row["access_time"]);reported=number(row["reported"])
@@ -17,4 +19,5 @@ def evaluate(rows,context):
             active=[g for g in grants if g["principal"]==row["principal"] and g["resource"]==row["resource"] and instant(g["start"])<=at<instant(g["end"])]
             good.append({**row,"at":at.isoformat(),"candidates":active,"candidate_count":len(active),"reported":str(reported)})
         except (DomainError,KeyError) as e:bad.append(reject(row,getattr(e,"code","MISSING_FIELD"),str(e)))
-    return {"rows":good,"quarantine":bad,"metrics":{"active_hits":sum(r["candidate_count"] for r in good),"grant_versions":len(grants)}}
+    renewals=parameters.get("renewals",[])
+    return {"rows":good,"quarantine":bad,"metrics":{"active_hits":sum(r["candidate_count"] for r in good),"grant_versions":len(grants),"renewed":sum(c["decision"]=="续期" for c in renewals),"stopped":sum(c["decision"]=="停用" for c in renewals)}}

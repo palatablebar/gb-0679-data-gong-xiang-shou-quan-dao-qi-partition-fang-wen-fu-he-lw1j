@@ -3,10 +3,11 @@ from app.config import ROOT,MODULES
 from app.errors import DomainError
 from app.values import scalar
 from app.manifest import digest,manifest
+from app.renewal import resolve
 from app import store
 from app.modules.m1_accesses.rules import evaluate as stage1
 from app.modules.m2_resources.rules import evaluate as stage2
-from app.modules.m3_grants.rules import evaluate as stage3
+from app.modules.m3_grants.rules import evaluate as stage3,GRANTS
 from app.modules.m4_conflicts.rules import evaluate as stage4
 from app.modules.m5_partitions.rules import evaluate as stage5
 from app.modules.m6_audit.rules import evaluate as stage6
@@ -16,7 +17,9 @@ def load_sample(name):
     if name not in {"dirty.csv","clean.csv","legacy.csv"}: raise DomainError("BAD_SAMPLE","样例不存在",404)
     return (ROOT/"sample_data"/name).read_bytes()
 def calculate(raw,params=None,stop=6):
-    params=params or {};started=time.monotonic();context={"parameters":params,"raw":raw,"quarantine":[]};stages=[];rows=[]
+    params=dict(params or {})
+    params["renewals"]=resolve(params.get("grants",GRANTS),store.renewals(),params.get("as_of"))
+    started=time.monotonic();context={"parameters":params,"raw":raw,"quarantine":[]};stages=[];rows=[]
     for index,stage in enumerate(STAGES[:stop+1]):
         result=stage(raw if index==0 else rows,context)
         result=scalar(result);rows=result["rows"]
